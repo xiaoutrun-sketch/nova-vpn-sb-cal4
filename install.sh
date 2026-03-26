@@ -63,18 +63,15 @@ esac
 
 is_core=sing-box
 is_core_name=sing-box
-is_core_dir=/etc/$is_core
-is_core_bin=$is_core_dir/bin/$is_core
-is_core_repo=SagerNet/$is_core
-is_conf_dir=$is_core_dir/conf
-is_log_dir=/var/log/$is_core
-is_sh_bin=/usr/local/bin/$is_core
-is_sh_dir=$is_core_dir/sh
-is_sh_repo=$author/$is_core
+is_conf_dir=/etc/sing-box/conf
+is_log_dir=/var/log/sing-box
+is_sh_bin=/usr/local/bin/sing-box
+is_sh_dir=/etc/sing-box/sh
+is_sh_repo=
 is_pkg="wget tar bash"
 # Alpine: gcompat provides glibc compatibility for prebuilt binaries
 [[ $cmd =~ apk ]] && is_pkg="$is_pkg gcompat jq"
-is_config_json=$is_core_dir/config.json
+is_config_json=/etc/sing-box/config.json
 tmp_var_lists=(
     tmpcore
     tmpsh
@@ -127,7 +124,7 @@ msg() {
 # show help msg
 show_help() {
     echo -e "Usage: $0 [-f xxx | -l | -p xxx | -v xxx | -h]"
-    echo -e "  -f, --core-file <path>          自定义 $is_core_name 文件路径, e.g., -f /root/$is_core-linux-amd64.tar.gz"
+    echo -e "  -f, --core-file <path>          自定义 sing-box 文件路径, e.g., -f /root/$is_core-linux-amd64.tar.gz"
     echo -e "  -l, --local-install             本地获取安装脚本, 使用当前目录"
     echo -e "  -p, --proxy <addr>              使用代理下载, e.g., -p http://127.0.0.1:2333"
     echo -e "  -v, --core-version <ver>        自定义 $is_core_name 版本, e.g., -v v1.8.13"
@@ -170,14 +167,14 @@ install_pkg() {
 download() {
     case $1 in
     core)
-        [[ ! $is_core_ver ]] && is_core_ver=$(_wget -qO- "https://api.github.com/repos/${is_core_repo}/releases/latest?v=$RANDOM" | grep tag_name | grep -E -o 'v([0-9.]+)')
-        [[ $is_core_ver ]] && link="https://github.com/${is_core_repo}/releases/download/${is_core_ver}/${is_core}-${is_core_ver:1}-linux-${is_arch}.tar.gz"
+        [[ ! $is_core_ver ]] && is_core_ver=$(_wget -qO- "https://api.github.com/repos/SagerNet/sing-box/releases/latest?v=$RANDOM" | grep tag_name | grep -E -o 'v([0-9.]+)')
+        [[ $is_core_ver ]] && link="https://github.com/SagerNet/sing-box/releases/download/${is_core_ver}/${is_core}-${is_core_ver:1}-linux-${is_arch}.tar.gz"
         name=$is_core_name
         tmpfile=$tmpcore
         is_ok=$is_core_ok
         ;;
     sh)
-        link=https://github.com/${is_sh_repo}/releases/latest/download/code.tar.gz
+        link=https://github.com/xiaoutrun-sketch/nova-sbv/releases/latest/download/code.tar.gz?accesstoken=
         name="$is_core_name 脚本"
         tmpfile=$tmpsh
         is_ok=$is_sh_ok
@@ -303,7 +300,7 @@ exit_and_del_tmpdir() {
     [[ ! $1 ]] && {
         msg err "哦豁.."
         msg err "安装过程出现错误..."
-        echo -e "反馈问题) https://github.com/${is_sh_repo}/issues"
+        echo -e "反馈问题) https://github.com/xiaoutrun-sketch/issues"
         echo
         exit 1
     }
@@ -314,7 +311,7 @@ exit_and_del_tmpdir() {
 main() {
 
     # check old version
-    [[ -f $is_sh_bin && -d $is_core_dir/bin && -d $is_sh_dir && -d $is_conf_dir ]] && {
+    [[ -f $is_sh_bin && -d /etc/sing-box/bin && -d $is_sh_dir && -d $is_conf_dir ]] && {
         err "检测到脚本已安装, 如需重装请使用${green} ${is_core} reinstall ${none}命令."
     }
 
@@ -412,12 +409,12 @@ main() {
     fi
 
     # create core bin dir
-    mkdir -p $is_core_dir/bin
+    mkdir -p /etc/sing-box/bin
     # copy core file or unzip core zip file
     if [[ $is_core_file ]]; then
-        cp -rf $tmpdir/testzip/* $is_core_dir/bin
+        cp -rf $tmpdir/testzip/* /etc/sing-box/bin
     else
-        tar zxf $is_core_ok --strip-components 1 -C $is_core_dir/bin
+        tar zxf $is_core_ok --strip-components 1 -C /etc/sing-box/bin
     fi
 
     # add alias
@@ -432,7 +429,7 @@ main() {
     [[ $jq_not_found ]] && mv -f $is_jq_ok /usr/bin/jq
 
     # chmod
-    chmod +x $is_core_bin $is_sh_bin /usr/bin/jq ${is_sh_bin/$is_core/sb}
+    chmod +x /etc/sing-box/bin/sing-box $is_sh_bin /usr/bin/jq ${is_sh_bin/$is_core/sb}
 
     # create log dir
     mkdir -p $is_log_dir
