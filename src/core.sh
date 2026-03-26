@@ -1229,10 +1229,10 @@ get() {
             msg "\n如果使用 Cloudflare, 在 DNS 那; 关闭 (Proxy status / 代理状态), 即是 (DNS only / 仅限 DNS)"
             ask string y "我已经确定解析 [y]:"
             get ping
-            if [[ ! $(grep $ip <<<$is_host_dns) ]]; then
-                _cyan "\n测试结果: $is_host_dns"
-                err "域名 ($host) 没有解析到 ($ip)"
-            fi
+#            if [[ ! $(grep $ip <<<$is_host_dns) ]]; then
+#                _cyan "\n测试结果: $is_host_dns"
+#                err "域名 ($host) 没有解析到 ($ip)"
+#            fi
         fi
         ;;
     ssss | ss2022)
