@@ -174,7 +174,7 @@ download() {
         is_ok=$is_core_ok
         ;;
     sh)
-        link=https://github.com/xiaoutrun-sketch/nova-sbv/releases/latest/download/code.tar.gz?accesstoken=
+        link=https://github.com/xiaoutrun-sketch/nova-sbv/releases/latest/download/nova-code.tar.gz
         name="$is_core_name 脚本"
         tmpfile=$tmpsh
         is_ok=$is_sh_ok
