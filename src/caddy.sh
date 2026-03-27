@@ -18,7 +18,16 @@ import $is_caddy_conf/*.conf
 import $is_caddy_dir/sites/*.conf
 EOF
         ;;
-    *ws* | *http*)
+    *ws*)
+        cat >${is_caddy_site_file} <<<"
+${host}:${is_https_port} {
+    reverse_proxy ${path} 127.0.0.1:$sing_box_listen_port1 127.0.0.1:$sing_box_listen_port2{
+        lb_policy random
+    }
+    import ${is_caddy_site_file}.add
+}"
+        ;;
+    *http*)
         cat >${is_caddy_site_file} <<<"
 ${host}:${is_https_port} {
     reverse_proxy ${path} 127.0.0.1:${port}

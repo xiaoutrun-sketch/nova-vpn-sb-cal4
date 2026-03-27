@@ -148,6 +148,7 @@ get_port() {
         tmp_port=$(shuf -i 445-65535 -n 1)
         [[ ! $(is_test port_used $tmp_port) && $tmp_port != $port ]] && break
     done
+    echo $tmp_port
 }
 
 get_pbk() {
@@ -331,6 +332,40 @@ create() {
         [[ $is_change || ! $json_str ]] && get protocol $2
         [[ $net == "reality" ]] && is_add_public_key=",outbounds:[{type:\"direct\"},{tag:\"public_key_$is_public_key\",type:\"direct\"}]"
         is_new_json=$(jq "{inbounds:[{tag:\"$is_config_name\",type:\"$is_protocol\",$is_listen,listen_port:$port,$json_str}]$is_add_public_key}" <<<{})
+        if [[ $host ]] && [[ ${2,,} == *"vless-ws-tls"* ]]; then
+            echo -n "生成第 1 个端口..."
+            sing_box_listen_port1=$(get_port)
+            if [[ $? -eq 0 ]]; then
+                echo " ✓ 端口 1: ${sing_box_listen_port1} (可用)"
+            else
+                echo " ✗ 端口 1 生成失败"
+                exit 1
+            fi
+
+            # 生成第 2 个端口（确保不与第 1 个重复）
+            echo -n "生成第 2 个端口..."
+            count=0
+            while true; do
+                ((count++))
+                sing_box_listen_port2=$(get_port)
+                if [[ $? -ne 0 ]]; then
+                    echo " ✗ 端口 2 生成失败"
+                    exit 1
+                fi
+
+                # 确保两个端口不重复
+                if [[ "$sing_box_listen_port1" != "$sing_box_listen_port2" ]]; then
+                    echo " ✓ 端口 2: ${sing_box_listen_port2} (可用)"
+                    break
+                fi
+            done
+            is_config_name=$2-${host}.json
+            local tag_config_name1=$2-${host}-${sing_box_listen_port1}.json
+            local tag_config_name2=$2-${host}-${sing_box_listen_port2}.json
+            local inbound1="{tag:\"${tag_config_name1}\",type:\"${is_protocol}\",${is_listen},listen_port:${sing_box_listen_port1},${json_str}}"
+            local inbound2="{tag:\"${tag_config_name2}\",type:\"${is_protocol}\",${is_listen},listen_port:${sing_box_listen_port2},${json_str}}"
+            is_new_json=$(jq "{inbounds:[${inbound1},${inbound2}]${is_add_public_key}}" <<<{})
+        fi
         [[ $is_test_json ]] && return # tmp test
         # only show json, dont save to file.
         [[ $is_gen ]] && {
