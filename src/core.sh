@@ -151,7 +151,7 @@ get_port() {
 }
 
 get_pbk() {
-    is_tmp_pbk=($(/etc/sing-box/bin/sing-box help $1 ${@:2} generate reality-keypair | sed 's/.*://'))
+    is_tmp_pbk=($(/etc/sing-box/bin/sing-box generate reality-keypair | sed 's/.*://'))
     is_public_key=${is_tmp_pbk[1]}
     is_private_key=${is_tmp_pbk[0]}
 }
