@@ -151,7 +151,8 @@ get_port() {
 }
 
 get_pbk() {
-    is_tmp_pbk=($($is_core_bin generate reality-keypair | sed 's/.*://'))
+    is_tmp_pbk=($(/etc/sing-box/bin/sing-box help $1 ${@:2}
+ generate reality-keypair | sed 's/.*://'))
     is_public_key=${is_tmp_pbk[1]}
     is_private_key=${is_tmp_pbk[0]}
 }
@@ -589,13 +590,13 @@ change() {
             is_tmp_json=/etc/sing-box/conf/$is_config_file-$uuid
             cp -f /etc/sing-box/conf/$is_config_file $is_tmp_json
             sed -i s#$is_private_key #$is_new_private_key# $is_tmp_json
-            $is_core_bin check -c $is_tmp_json &>/dev/null
+            /etc/sing-box/bin/sing-box check -c $is_tmp_json &>/dev/null
             if [[ $? != 0 ]]; then
                 is_key_err=1
                 is_key_err_msg="Private key 无法通过测试."
             fi
             sed -i s#$is_new_private_key #$is_new_public_key# $is_tmp_json
-            $is_core_bin check -c $is_tmp_json &>/dev/null
+            /etc/sing-box/bin/sing-box check -c $is_tmp_json &>/dev/null
             if [[ $? != 0 ]]; then
                 is_key_err=1
                 is_key_err_msg+="Public key 无法通过测试."
@@ -747,7 +748,7 @@ manage() {
         ;;
     *)
         is_do_name=$is_core
-        is_run_bin=$is_core_bin
+        is_run_bin=/etc/sing-box/bin/sing-box
         is_do_name_msg=$is_core_name
         ;;
     esac
