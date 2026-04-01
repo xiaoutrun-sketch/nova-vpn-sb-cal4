@@ -88,7 +88,7 @@ about() {
     msg "Github: $(msg_ul https://github.com/xiaoutrun-sketch/nova-sbv)"
     msg "Twitter: $(msg_ul https://twitter.com/ai233boy)"
     msg "sing-box site: $(msg_ul https://sing-box.sagernet.org/)"
-    msg "sing-box core: $(msg_ul https://github.com/${is_core_repo})"
+    msg "sing-box core: $(msg_ul https://github.com/SagerNet/sing-box)"
     msg
     ####### 要点13脸吗只会改我链接的小人 #######
 }

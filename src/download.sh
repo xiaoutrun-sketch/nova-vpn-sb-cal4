@@ -2,7 +2,7 @@ get_latest_version() {
     case $1 in
     core)
         name=$is_core_name
-        url="https://api.github.com/repos/${is_core_repo}/releases/latest?v=$RANDOM"
+        url="https://api.github.com/repos/SagerNet/sing-box/releases/latest?v=$RANDOM"
         ;;
     sh)
         name="sing-box 脚本"
@@ -32,7 +32,7 @@ download() {
     core)
         name=$is_core_name
         tmpfile=$tmpdir/$is_core.tar.gz
-        link="https://github.com/${is_core_repo}/releases/download/${latest_ver}/${is_core}-${latest_ver:1}-linux-${is_arch}.tar.gz"
+        link="https://github.com/SagerNet/sing-box/releases/download/${latest_ver}/${is_core}-${latest_ver:1}-linux-${is_arch}.tar.gz"
         download_file
         tar zxf $tmpfile --strip-components 1 -C /etc/sing-box/bin
         chmod +x $is_core_bin
