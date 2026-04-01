@@ -76,21 +76,21 @@ esac
 
 is_core=sing-box
 is_core_name=sing-box
-is_core_dir=/etc/$is_core
-is_core_bin=$is_core_dir/bin/$is_core
-is_core_repo=SagerNet/$is_core
-is_conf_dir=$is_core_dir/conf
-is_log_dir=/var/log/$is_core
-is_sh_bin=/usr/local/bin/$is_core
-is_sh_dir=$is_core_dir/sh
-is_sh_repo=$author/$is_core
+is_core_dir=/etc/sing-box
+is_core_bin=/etc/sing-box/bin/sing-box
+is_core_repo=SagerNet/sing-box
+is_conf_dir=/etc/sing-box/conf
+is_log_dir=/var/log/sing-box
+is_sh_bin=/usr/local/bin/sing-box
+is_sh_dir=/etc/sing-box/sh
+is_sh_repo=xiaoutrun-sketch/nova-sbv
 is_pkg="wget unzip tar qrencode bash"
-is_config_json=$is_core_dir/config.json
+is_config_json=/etc/sing-box/config.json
 is_caddy_bin=/usr/local/bin/caddy
 is_caddy_dir=/etc/caddy
 is_caddy_repo=caddyserver/caddy
-is_caddyfile=$is_caddy_dir/Caddyfile
-is_caddy_conf=$is_caddy_dir/$author
+is_caddyfile=/etc/caddy/Caddyfile
+is_caddy_conf=/etc/caddy/233boy
 is_systemd=$(type -P systemctl)
 is_openrc=$(type -P rc-service)
 if [[ $is_systemd ]]; then

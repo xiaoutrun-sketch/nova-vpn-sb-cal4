@@ -67,7 +67,7 @@ is_conf_dir=/etc/sing-box/conf
 is_log_dir=/var/log/sing-box
 is_sh_bin=/usr/local/bin/sing-box
 is_sh_dir=/etc/sing-box/sh
-is_sh_repo=
+is_sh_repo=xiaoutrun-sketch/nova-sbv
 is_pkg="wget tar bash"
 # Alpine: gcompat provides glibc compatibility for prebuilt binaries
 [[ $cmd =~ apk ]] && is_pkg="$is_pkg gcompat jq"
@@ -174,7 +174,7 @@ download() {
         is_ok=$is_core_ok
         ;;
     sh)
-        link=https://github.com/xiaoutrun-sketch/nova-sbv/releases/latest/download/nova-code.tar.gz
+        link=https://github.com/xiaoutrun-sketch/nova-sbv/releases/latest/download/code.tar.gz
         name="$is_core_name 脚本"
         tmpfile=$tmpsh
         is_ok=$is_sh_ok
