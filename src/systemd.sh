@@ -19,6 +19,9 @@ install_service_systemd() {
 Description=$is_core_name Service
 Documentation=$is_doc_site
 After=network.target nss-lookup.target
+#设置重启限制20min内重启100次
+StartLimitIntervalSec=1200
+StartLimitBurst=100
 
 [Service]
 #User=nobody
@@ -46,6 +49,9 @@ Description=Caddy
 Documentation=https://caddyserver.com/docs/
 After=network.target network-online.target
 Requires=network-online.target
+#设置重启限制20min内重启100次
+StartLimitIntervalSec=1200
+StartLimitBurst=100
 
 [Service]
 Type=notify
