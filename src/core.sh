@@ -151,7 +151,7 @@ get_port() {
 }
 
 get_pbk() {
-    is_tmp_pbk=($($is_core_bin generate reality-keypair | sed 's/.*://'))
+    is_tmp_pbk=($(/etc/sing-box/bin/sing-box generate reality-keypair | sed 's/.*://'))
     is_public_key=${is_tmp_pbk[1]}
     is_private_key=${is_tmp_pbk[0]}
 }
@@ -326,7 +326,7 @@ create() {
         else
             is_config_name=$2-${port}.json
         fi
-        is_json_file=$is_conf_dir/$is_config_name
+        is_json_file=/etc/sing-box/conf/$is_config_name
         # get json
         [[ $is_change || ! $json_str ]] && get protocol $2
         [[ $net == "reality" ]] && is_add_public_key=",outbounds:[{type:\"direct\"},{tag:\"public_key_$is_public_key\",type:\"direct\"}]"
@@ -382,14 +382,14 @@ create() {
         is_log='log:{output:"/var/log/'$is_core'/access.log",level:"info","timestamp":true}'
         is_dns='dns:{}'
         is_ntp='ntp:{"enabled":true,"server":"time.apple.com"},'
-        if [[ -f $is_config_json ]]; then
-            [[ $(jq .ntp.enabled $is_config_json) != "true" ]] && is_ntp=
+        if [[ -f /etc/sing-box/config.json ]]; then
+            [[ $(jq .ntp.enabled /etc/sing-box/config.json) != "true" ]] && is_ntp=
         else
             [[ ! $is_ntp_on ]] && is_ntp=
         fi
         is_outbounds='outbounds:[{tag:"direct",type:"direct"}]'
         is_server_config_json=$(jq "{$is_log,$is_dns,$is_ntp$is_outbounds}" <<<{})
-        cat <<<$is_server_config_json >$is_config_json
+        cat <<<$is_server_config_json >/etc/sing-box/config.json
         manage restart &
         ;;
     esac
@@ -590,16 +590,16 @@ change() {
             if [[ $is_new_private_key == $is_new_public_key ]]; then
                 err "Private key 和 Public key 不能一样."
             fi
-            is_tmp_json=$is_conf_dir/$is_config_file-$uuid
-            cp -f $is_conf_dir/$is_config_file $is_tmp_json
+            is_tmp_json=/etc/sing-box/conf/$is_config_file-$uuid
+            cp -f /etc/sing-box/conf/$is_config_file $is_tmp_json
             sed -i s#$is_private_key #$is_new_private_key# $is_tmp_json
-            $is_core_bin check -c $is_tmp_json &>/dev/null
+            /etc/sing-box/bin/sing-box check -c $is_tmp_json &>/dev/null
             if [[ $? != 0 ]]; then
                 is_key_err=1
                 is_key_err_msg="Private key 无法通过测试."
             fi
             sed -i s#$is_new_private_key #$is_new_public_key# $is_tmp_json
-            $is_core_bin check -c $is_tmp_json &>/dev/null
+            /etc/sing-box/bin/sing-box check -c $is_tmp_json &>/dev/null
             if [[ $? != 0 ]]; then
                 is_key_err=1
                 is_key_err_msg+="Public key 无法通过测试."
@@ -663,7 +663,7 @@ del() {
             msg "\n是否删除配置文件?: $is_config_file"
             pause
         fi
-        rm -rf $is_conf_dir/"$is_config_file"
+        rm -rf /etc/sing-box/conf/"$is_config_file"
         [[ ! $is_new_json ]] && manage restart &
         [[ ! $is_no_del_msg ]] && _green "\n已删除: $is_config_file\n"
 
@@ -679,7 +679,7 @@ del() {
             }
         }
     fi
-    if [[ ! $(ls $is_conf_dir | grep .json) && ! $is_change ]]; then
+    if [[ ! $(ls /etc/sing-box/conf | grep .json) && ! $is_change ]]; then
         warn "当前配置目录为空! 因为你刚刚删除了最后一个配置文件."
         is_conf_dir_empty=1
     fi
@@ -697,7 +697,7 @@ uninstall() {
     fi
     manage stop &>/dev/null
     manage disable &>/dev/null
-    rm -rf $is_core_dir $is_log_dir $is_sh_bin ${is_sh_bin/$is_core/sb}
+    rm -rf /etc/sing-box /var/log/sing-box /usr/local/bin/sing-box ${is_sh_bin/$is_core/sb}
     if [[ $is_systemd ]]; then
         rm -f /lib/systemd/system/$is_core.service
     elif [[ $is_openrc ]]; then
@@ -709,15 +709,15 @@ uninstall() {
         manage stop caddy &>/dev/null
         manage disable caddy &>/dev/null
         if [[ $is_systemd ]]; then
-            rm -rf $is_caddy_dir $is_caddy_bin /lib/systemd/system/caddy.service
+            rm -rf /etc/caddy /usr/local/bin/caddy /lib/systemd/system/caddy.service
         elif [[ $is_openrc ]]; then
-            rm -rf $is_caddy_dir $is_caddy_bin /etc/init.d/caddy
+            rm -rf /etc/caddy /usr/local/bin/caddy /etc/init.d/caddy
         fi
     fi
     [[ $is_install_sh ]] && return # reinstall
     _green "\n卸载完成!"
     msg "脚本哪里需要完善? 请反馈"
-    msg "反馈问题) $(msg_ul https://github.com/${is_sh_repo}/issues)\n"
+    msg "反馈问题) $(msg_ul https://github.com/xiaoutrun-sketch/nova-sbv/issues)\n"
 }
 
 # manage run status
@@ -746,12 +746,12 @@ manage() {
     case $2 in
     caddy)
         is_do_name=$2
-        is_run_bin=$is_caddy_bin
+        is_run_bin=/usr/local/bin/caddy
         is_do_name_msg=Caddy
         ;;
     *)
         is_do_name=$is_core
-        is_run_bin=$is_core_bin
+        is_run_bin=/etc/sing-box/bin/sing-box
         is_do_name_msg=$is_core_name
         ;;
     esac
@@ -1027,7 +1027,7 @@ add() {
             is_test_json=1
             create server Shadowsocks
             [[ ! $tmp_uuid ]] && get_uuid
-            is_test_json_save=$is_conf_dir/tmp-test-$tmp_uuid
+            is_test_json_save=/etc/sing-box/conf/tmp-test-$tmp_uuid
             cat <<<"$is_new_json" >$is_test_json_save
             $is_core_bin check -c $is_test_json_save &>/dev/null
             if [[ $? != 0 ]]; then
@@ -1074,8 +1074,8 @@ get() {
     file)
         is_file_str=$2
         [[ ! $is_file_str ]] && is_file_str='.json$'
-        # is_all_json=("$(ls $is_conf_dir | grep -E $is_file_str)")
-        readarray -t is_all_json <<<"$(ls $is_conf_dir | grep -E -i "$is_file_str" | sed '/dynamic-port-.*-link/d' | head -233)" # limit max 233 lines for show.
+        # is_all_json=("$(ls /etc/sing-box/conf | grep -E $is_file_str)")
+        readarray -t is_all_json <<<"$(ls /etc/sing-box/conf | grep -E -i "$is_file_str" | sed '/dynamic-port-.*-link/d' | head -233)" # limit max 233 lines for show.
         [[ ! $is_all_json ]] && err "无法找到相关的配置文件: $2"
         [[ ${#is_all_json[@]} -eq 1 ]] && is_config_file=$is_all_json && is_auto_get_config=1
         [[ ! $is_config_file ]] && {
@@ -1086,7 +1086,7 @@ get() {
     info)
         get file $2
         if [[ $is_config_file ]]; then
-            is_json_str=$(cat $is_conf_dir/"$is_config_file" | sed s#//.*##)
+            is_json_str=$(cat /etc/sing-box/conf/"$is_config_file" | sed s#//.*##)
             is_json_data=$(jq '(.inbounds[0]|.type,.listen_port,(.users[0]|.uuid,.password,.username),.method,.password,.override_port,.override_address,(.transport|.type,.path,.headers.host),(.tls|.server_name,.reality.private_key)),(.outbounds[1].tag)' <<<$is_json_str)
             [[ $? != 0 ]] && err "无法读取此文件: $is_config_file"
             is_up_var_set=(null is_protocol port uuid password username ss_method ss_password door_port door_addr net_type path host is_servername is_private_key is_public_key)
@@ -1264,7 +1264,7 @@ get() {
         _green "安装 Caddy 成功.\n"
         ;;
     reinstall)
-        is_install_sh=$(cat $is_sh_dir/install.sh)
+        is_install_sh=$(cat /etc/sing-box/sh/install.sh)
         uninstall
         bash <<<$is_install_sh
         ;;
@@ -1278,24 +1278,24 @@ get() {
         fi
         is_no_manage_msg=1
         if [[ ! $(pgrep -f $is_core_bin 2>/dev/null || grep -l "$is_core_bin" /proc/*/cmdline 2>/dev/null) ]]; then
-            _yellow "\n测试运行 $is_core_name ..\n"
+            _yellow "\n测试运行 sing-box ..\n"
             manage start &>/dev/null
             if [[ $is_run_fail == $is_core ]]; then
-                _red "$is_core_name 运行失败信息:"
-                $is_core_bin run -c $is_config_json -C $is_conf_dir
+                _red "sing-box 运行失败信息:"
+                $is_core_bin run -c /etc/sing-box/config.json -C /etc/sing-box/conf
             else
-                _green "\n测试通过, 已启动 $is_core_name ..\n"
+                _green "\n测试通过, 已启动 sing-box ..\n"
             fi
         else
-            _green "\n$is_core_name 正在运行, 跳过测试\n"
+            _green "\nsing-box 正在运行, 跳过测试\n"
         fi
         if [[ $is_caddy ]]; then
-            if [[ ! $(pgrep -f $is_caddy_bin 2>/dev/null || grep -l "$is_caddy_bin" /proc/*/cmdline 2>/dev/null) ]]; then
+            if [[ ! $(pgrep -f /usr/local/bin/caddy 2>/dev/null || grep -l "/usr/local/bin/caddy" /proc/*/cmdline 2>/dev/null) ]]; then
                 _yellow "\n测试运行 Caddy ..\n"
                 manage start caddy &>/dev/null
                 if [[ $is_run_fail == 'caddy' ]]; then
                     _red "Caddy 运行失败信息:"
-                    $is_caddy_bin run --config $is_caddyfile
+                    /usr/local/bin/caddy run --config $is_caddyfile
                 else
                     _green "\n测试通过, 已启动 Caddy ..\n"
                 fi
@@ -1440,14 +1440,14 @@ info() {
 
 # footer msg
 footer_msg() {
-    [[ $is_core_stop && ! $is_new_json ]] && warn "$is_core_name 当前处于停止状态."
+    [[ $is_core_stop && ! $is_new_json ]] && warn "sing-box 当前处于停止状态."
     [[ $is_caddy_stop && $host ]] && warn "Caddy 当前处于停止状态."
     ####### 要点13脸吗只会改我链接的小人 #######
     unset c n m s b
     msg "------------- END -------------"
     msg "关注(tg): $(msg_ul https://t.me/tg2333)"
     msg "文档(doc): $(msg_ul https://233boy.com/$is_core/$is_core-script/)"
-    msg "推广(ads): 机场推荐($is_core_name services): $(msg_ul https://g${c}e${n}t${m}j${s}m${b}s.com/)\n"
+    msg "推广(ads): 机场推荐(sing-box services): $(msg_ul https://g${c}e${n}t${m}j${s}m${b}s.com/)\n"
     ####### 要点13脸吗只会改我链接的小人 #######
 }
 
@@ -1490,13 +1490,13 @@ update() {
         is_update_name=core
         is_show_name=$is_core_name
         is_run_ver=v${is_core_ver##* }
-        is_update_repo=$is_core_repo
+        is_update_repo=SagerNet/sing-box
         ;;
     2 | sh)
         is_update_name=sh
-        is_show_name="$is_core_name 脚本"
+        is_show_name="sing-box 脚本"
         is_run_ver=$is_sh_ver
-        is_update_repo=$is_sh_repo
+        is_update_repo=xiaoutrun-sketch/nova-sbv
         ;;
     3 | caddy)
         [[ ! $is_caddy ]] && err "不支持更新 Caddy."
@@ -1534,8 +1534,8 @@ update() {
 
 # main menu; if no prefer args.
 is_main_menu() {
-    msg "\n------------- $is_core_name script $is_sh_ver by $author -------------"
-    msg "$is_core_name $is_core_ver: $is_core_status"
+    msg "\n------------- sing-box script $is_sh_ver by nova -------------"
+    msg "sing-box $is_core_ver: $is_core_status"
     msg "群组(Chat): $(msg_ul https://t.me/tg233boy)"
     is_main_start=1
     ask mainmenu
@@ -1644,7 +1644,7 @@ main() {
         fix-all)
             is_dont_auto_exit=1
             msg
-            for v in $(ls $is_conf_dir | grep .json$ | sed '/dynamic-port-.*-link/d'); do
+            for v in $(ls /etc/sing-box/conf | grep .json$ | sed '/dynamic-port-.*-link/d'); do
                 msg "fix: $v"
                 change $v full
             done
@@ -1721,7 +1721,7 @@ main() {
         get $@
         ;;
     s | status)
-        msg "\n$is_core_name $is_core_ver: $is_core_status\n"
+        msg "\nsing-box $is_core_ver: $is_core_status\n"
         [[ $is_caddy ]] && msg "Caddy $is_caddy_ver: $is_caddy_status\n"
         ;;
     start | stop | r | restart)
@@ -1743,7 +1743,7 @@ main() {
         ;;
     v | ver | version)
         [[ $is_caddy_ver ]] && is_caddy_ver="/ $(_blue Caddy $is_caddy_ver)"
-        msg "\n$(_green $is_core_name $is_core_ver) / $(_cyan $is_core_name script $is_sh_ver) $is_caddy_ver\n"
+        msg "\n$(_green sing-box $is_core_ver) / $(_cyan sing-box script $is_sh_ver) $is_caddy_ver\n"
         ;;
     h | help | --help)
         load help.sh

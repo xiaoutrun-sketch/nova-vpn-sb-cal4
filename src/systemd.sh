@@ -16,7 +16,7 @@ install_service_systemd() {
         is_doc_site=https://sing-box.sagernet.org/
         cat >/lib/systemd/system/$is_core.service <<<"
 [Unit]
-Description=$is_core_name Service
+Description=sing-box Service
 Documentation=$is_doc_site
 After=network.target nss-lookup.target
 #设置重启限制20min内重启100次
@@ -27,7 +27,7 @@ StartLimitBurst=100
 #User=nobody
 User=root
 NoNewPrivileges=true
-ExecStart=$is_core_bin run -c $is_config_json -C $is_conf_dir
+ExecStart=/etc/sing-box/bin/sing-box run -c /etc/sing-box/config.json -C /etc/sing-box/conf
 Restart=on-failure
 RestartSec=5s
 RestartPreventExitStatus=23
@@ -57,8 +57,8 @@ StartLimitBurst=100
 Type=notify
 User=root
 Group=root
-ExecStart=$is_caddy_bin run --environ --config $is_caddyfile --adapter caddyfile
-ExecReload=$is_caddy_bin reload --config $is_caddyfile --adapter caddyfile
+ExecStart=/usr/local/bin/caddy run --environ --config $is_caddyfile --adapter caddyfile
+ExecReload=/usr/local/bin/caddy reload --config $is_caddyfile --adapter caddyfile
 TimeoutStopSec=5s
 Restart=on-failure
 RestartSec=5s
@@ -85,10 +85,10 @@ install_service_openrc() {
 #!/sbin/openrc-run
 
 name="$is_core_name"
-description="$is_core_name Service"
+description="sing-box Service"
 
 command="$is_core_bin"
-command_args="run -c $is_config_json -C $is_conf_dir"
+command_args="run -c /etc/sing-box/config.json -C /etc/sing-box/conf"
 command_background=true
 pidfile="/run/\${RC_SVCNAME}.pid"
 output_log="/var/log/$is_core/access.log"
@@ -110,7 +110,7 @@ EOF
 name="Caddy"
 description="Caddy web server"
 
-command="$is_caddy_bin"
+command="/usr/local/bin/caddy"
 command_args="run --environ --config $is_caddyfile --adapter caddyfile"
 command_background=true
 pidfile="/run/\${RC_SVCNAME}.pid"

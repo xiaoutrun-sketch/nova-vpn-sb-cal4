@@ -1,11 +1,11 @@
 show_help() {
     case $1 in
     api | x25519 | tls | run | uuid | version)
-        $is_core_bin help $1 ${@:2}
+        /etc/sing-box/bin/sing-box help $1 ${@:2}
         ;;
     *)
         [[ $1 ]] && warn "未知选项 '$1'"
-        msg "$is_core_name script $is_sh_ver by $author"
+        msg "sing-box script $is_sh_ver by nova"
         msg "Usage: $is_core [options]... [args]... "
         msg
         help_info=(
@@ -60,18 +60,18 @@ show_help() {
             "   debug [name]                                    显示一些 debug 信息, 仅供参考"
             "   gen [...]                                       同等于 add, 但只显示 JSON 内容, 不创建文件, 测试使用"
             "   no-auto-tls [...]                               同等于 add, 但禁止自动配置 TLS, 可用于 *TLS 相关协议"
-            # "   xapi [...]                                      同等于 $is_core api, 但 API 后端使用当前运行的 $is_core_name 服务\n"
+            # "   xapi [...]                                      同等于 $is_core api, 但 API 后端使用当前运行的 sing-box 服务\n"
             "其他:"
             "   bbr                                             启用 BBR, 如果支持"
-            "   bin [...]                                       运行 $is_core_name 命令, 例如: $is_core bin help"
-            "   [...] [...]                                     兼容绝大多数的 $is_core_name 命令, 例如: $is_core_name generate uuid"
+            "   bin [...]                                       运行 sing-box 命令, 例如: $is_core bin help"
+            "   [...] [...]                                     兼容绝大多数的 sing-box 命令, 例如: sing-box generate uuid"
             "   h, help                                         显示此帮助界面\n"
         )
         for v in "${help_info[@]}"; do
             msg "$v"
         done
         msg "谨慎使用 del, ddel, 此选项会直接删除配置; 无需确认"
-        msg "反馈问题) $(msg_ul https://github.com/${is_sh_repo}/issues) "
+        msg "反馈问题) $(msg_ul https://github.com/xiaoutrun-sketch/nova-sbv/issues) "
         msg "文档(doc) $(msg_ul https://233boy.com/$is_core/$is_core-script/)"
         ;;
 
@@ -85,10 +85,10 @@ about() {
     msg "网站: $(msg_ul https://233boy.com)"
     msg "频道: $(msg_ul https://t.me/tg2333)"
     msg "群组: $(msg_ul https://t.me/tg233boy)"
-    msg "Github: $(msg_ul https://github.com/${is_sh_repo})"
+    msg "Github: $(msg_ul https://github.com/xiaoutrun-sketch/nova-sbv)"
     msg "Twitter: $(msg_ul https://twitter.com/ai233boy)"
-    msg "$is_core_name site: $(msg_ul https://sing-box.sagernet.org/)"
-    msg "$is_core_name core: $(msg_ul https://github.com/${is_core_repo})"
+    msg "sing-box site: $(msg_ul https://sing-box.sagernet.org/)"
+    msg "sing-box core: $(msg_ul https://github.com/SagerNet/sing-box)"
     msg
     ####### 要点13脸吗只会改我链接的小人 #######
 }

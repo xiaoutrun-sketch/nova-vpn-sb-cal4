@@ -19,24 +19,24 @@ log_set() {
         }
         case $is_log_level_use in
         del)
-            rm -rf $is_log_dir/*.log
+            rm -rf /var/log/sing-box/*.log
             msg "\n $(_green 已临时删除 log 文件, 如果你想要完全禁止生成 log 文件请使用: $is_core log none)\n"
             ;;
         none)
-            rm -rf $is_log_dir/*.log
-            cat <<<$(jq '.log={"disabled":true}' $is_config_json) >$is_config_json
+            rm -rf /var/log/sing-box/*.log
+            cat <<<$(jq '.log={"disabled":true}' /etc/sing-box/config.json) >/etc/sing-box/config.json
             ;;
         *)
-            cat <<<$(jq '.log={output:"/var/log/'$is_core'/access.log",level:"'$is_log_level_use'","timestamp":true}' $is_config_json) >$is_config_json
+            cat <<<$(jq '.log={output:"/var/log/'$is_core'/access.log",level:"'$is_log_level_use'","timestamp":true}' /etc/sing-box/config.json) >/etc/sing-box/config.json
             ;;
         esac
 
         manage restart &
         [[ $1 != 'del' ]] && msg "\n已更新 Log 设定为: $(_green $is_log_level_use)\n"
     else
-        if [[ -f $is_log_dir/access.log ]]; then
+        if [[ -f /var/log/sing-box/access.log ]]; then
             msg "\n 提醒: 按 $(_green Ctrl + C) 退出\n"
-            tail -f $is_log_dir/access.log
+            tail -f /var/log/sing-box/access.log
         else
             err "无法找到 log 文件."
         fi

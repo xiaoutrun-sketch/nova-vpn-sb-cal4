@@ -2,7 +2,7 @@ caddy_config() {
     is_caddy_site_file=$is_caddy_conf/${host}.conf
     case $1 in
     new)
-        mkdir -p $is_caddy_dir $is_caddy_dir/sites $is_caddy_conf
+        mkdir -p /etc/caddy /etc/caddy/sites $is_caddy_conf
         cat >$is_caddyfile <<-EOF
 # don't edit this file #
 # for more info, see https://233boy.com/$is_core/caddy-auto-tls/
@@ -15,7 +15,7 @@ caddy_config() {
   https_port $is_https_port
 }
 import $is_caddy_conf/*.conf
-import $is_caddy_dir/sites/*.conf
+import /etc/caddy/sites/*.conf
 EOF
         ;;
     *ws* | *http*)

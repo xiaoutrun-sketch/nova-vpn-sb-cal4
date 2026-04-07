@@ -2,11 +2,11 @@ get_latest_version() {
     case $1 in
     core)
         name=$is_core_name
-        url="https://api.github.com/repos/${is_core_repo}/releases/latest?v=$RANDOM"
+        url="https://api.github.com/repos/SagerNet/sing-box/releases/latest?v=$RANDOM"
         ;;
     sh)
-        name="$is_core_name 脚本"
-        url="https://api.github.com/repos/$is_sh_repo/releases/latest?v=$RANDOM"
+        name="sing-box 脚本"
+        url="https://api.github.com/repos/xiaoutrun-sketch/nova-sbv/releases/latest?v=$RANDOM"
         ;;
     caddy)
         name="Caddy"
@@ -32,18 +32,18 @@ download() {
     core)
         name=$is_core_name
         tmpfile=$tmpdir/$is_core.tar.gz
-        link="https://github.com/${is_core_repo}/releases/download/${latest_ver}/${is_core}-${latest_ver:1}-linux-${is_arch}.tar.gz"
+        link="https://github.com/SagerNet/sing-box/releases/download/${latest_ver}/${is_core}-${latest_ver:1}-linux-${is_arch}.tar.gz"
         download_file
-        tar zxf $tmpfile --strip-components 1 -C $is_core_dir/bin
+        tar zxf $tmpfile --strip-components 1 -C /etc/sing-box/bin
         chmod +x $is_core_bin
         ;;
     sh)
-        name="$is_core_name 脚本"
+        name="sing-box 脚本"
         tmpfile=$tmpdir/sh.tar.gz
-        link="https://github.com/${is_sh_repo}/releases/download/${latest_ver}/code.tar.gz"
+        link="https://github.com/xiaoutrun-sketch/nova-sbv/releases/download/${latest_ver}/code.tar.gz"
         download_file
-        tar zxf $tmpfile -C $is_sh_dir
-        chmod +x $is_sh_bin ${is_sh_bin/$is_core/sb}
+        tar zxf $tmpfile -C /etc/sing-box/sh
+        chmod +x /usr/local/bin/sing-box ${is_sh_bin/$is_core/sb}
         ;;
     caddy)
         name="Caddy"
@@ -52,8 +52,8 @@ download() {
         link="https://github.com/${is_caddy_repo}/releases/download/${latest_ver}/caddy_${latest_ver:1}_linux_${is_arch}.tar.gz"
         download_file
         tar zxf $tmpfile -C $tmpdir
-        cp -f $tmpdir/caddy $is_caddy_bin
-        chmod +x $is_caddy_bin
+        cp -f $tmpdir/caddy /usr/local/bin/caddy
+        chmod +x /usr/local/bin/caddy
         ;;
     esac
     rm -rf $tmpdir

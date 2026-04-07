@@ -67,7 +67,7 @@ is_conf_dir=/etc/sing-box/conf
 is_log_dir=/var/log/sing-box
 is_sh_bin=/usr/local/bin/sing-box
 is_sh_dir=/etc/sing-box/sh
-is_sh_repo=
+is_sh_repo=xiaoutrun-sketch/nova-sbv
 is_pkg="wget tar bash"
 # Alpine: gcompat provides glibc compatibility for prebuilt binaries
 [[ $cmd =~ apk ]] && is_pkg="$is_pkg gcompat jq"
@@ -95,7 +95,7 @@ done
 
 # load bash script.
 load() {
-    . $is_sh_dir/src/$1
+    . /etc/sing-box/sh/src/$1
 }
 
 # wget add --no-check-certificate
@@ -127,7 +127,7 @@ show_help() {
     echo -e "  -f, --core-file <path>          自定义 sing-box 文件路径, e.g., -f /root/$is_core-linux-amd64.tar.gz"
     echo -e "  -l, --local-install             本地获取安装脚本, 使用当前目录"
     echo -e "  -p, --proxy <addr>              使用代理下载, e.g., -p http://127.0.0.1:2333"
-    echo -e "  -v, --core-version <ver>        自定义 $is_core_name 版本, e.g., -v v1.8.13"
+    echo -e "  -v, --core-version <ver>        自定义 sing-box 版本, e.g., -v v1.8.13"
     echo -e "  -h, --help                      显示此帮助界面\n"
 
     exit 0
@@ -174,8 +174,8 @@ download() {
         is_ok=$is_core_ok
         ;;
     sh)
-        link=https://github.com/xiaoutrun-sketch/nova-sbv/releases/latest/download/nova-code.tar.gz
-        name="$is_core_name 脚本"
+        link=https://github.com/xiaoutrun-sketch/nova-sbv/releases/latest/download/code.tar.gz
+        name="sing-box 脚本"
         tmpfile=$tmpsh
         is_ok=$is_sh_ok
         ;;
@@ -311,7 +311,7 @@ exit_and_del_tmpdir() {
 main() {
 
     # check old version
-    [[ -f $is_sh_bin && -d /etc/sing-box/bin && -d $is_sh_dir && -d $is_conf_dir ]] && {
+    [[ -f /usr/local/bin/sing-box && -d /etc/sing-box/bin && -d /etc/sing-box/sh && -d /etc/sing-box/conf ]] && {
         err "检测到脚本已安装, 如需重装请使用${green} ${is_core} reinstall ${none}命令."
     }
 
@@ -321,7 +321,7 @@ main() {
     # show welcome msg
     clear
     echo
-    echo "........... $is_core_name script by $author .........."
+    echo "........... sing-box script by nova .........."
     echo
 
     # start installing...
@@ -399,13 +399,13 @@ main() {
     }
 
     # create sh dir...
-    mkdir -p $is_sh_dir
+    mkdir -p /etc/sing-box/sh
 
     # copy sh file or unzip sh zip file.
     if [[ $local_install ]]; then
-        cp -rf $PWD/* $is_sh_dir
+        cp -rf $PWD/* /etc/sing-box/sh
     else
-        tar zxf $is_sh_ok -C $is_sh_dir
+        tar zxf $is_sh_ok -C /etc/sing-box/sh
     fi
 
     # create core bin dir
@@ -418,21 +418,21 @@ main() {
     fi
 
     # add alias
-    echo "alias sb=$is_sh_bin" >>/root/.bashrc
-    echo "alias $is_core=$is_sh_bin" >>/root/.bashrc
+    echo "alias sb=/usr/local/bin/sing-box" >>/root/.bashrc
+    echo "alias $is_core=/usr/local/bin/sing-box" >>/root/.bashrc
 
     # core command
-    ln -sf $is_sh_dir/$is_core.sh $is_sh_bin
-    ln -sf $is_sh_dir/$is_core.sh ${is_sh_bin/$is_core/sb}
+    ln -sf /etc/sing-box/sh/$is_core.sh /usr/local/bin/sing-box
+    ln -sf /etc/sing-box/sh/$is_core.sh ${is_sh_bin/$is_core/sb}
 
     # jq
     [[ $jq_not_found ]] && mv -f $is_jq_ok /usr/bin/jq
 
     # chmod
-    chmod +x /etc/sing-box/bin/sing-box $is_sh_bin /usr/bin/jq ${is_sh_bin/$is_core/sb}
+    chmod +x /etc/sing-box/bin/sing-box /usr/local/bin/sing-box /usr/bin/jq ${is_sh_bin/$is_core/sb}
 
     # create log dir
-    mkdir -p $is_log_dir
+    mkdir -p /var/log/sing-box
 
     # show a tips msg
     msg ok "生成配置文件..."
@@ -443,7 +443,7 @@ main() {
     install_service $is_core &>/dev/null
 
     # create condf dir
-    mkdir -p $is_conf_dir
+    mkdir -p /etc/sing-box/conf
 
     load core.sh
     # create a reality config

@@ -49,7 +49,7 @@ warn() {
 
 # load bash script.
 load() {
-    . $is_sh_dir/src/$1
+    . /etc/sing-box/sh/src/$1
 }
 
 # wget add --no-check-certificate
@@ -73,24 +73,31 @@ amd64 | x86_64)
     err "此脚本仅支持 64 位系统..."
     ;;
 esac
-
-is_core=sing-box
-is_core_name=sing-box
-is_core_dir=/etc/$is_core
-is_core_bin=$is_core_dir/bin/$is_core
-is_core_repo=SagerNet/$is_core
-is_conf_dir=$is_core_dir/conf
-is_log_dir=/var/log/$is_core
-is_sh_bin=/usr/local/bin/$is_core
-is_sh_dir=$is_core_dir/sh
-is_sh_repo=$author/$is_core
+#不要修改的
 is_pkg="wget unzip tar qrencode bash"
-is_config_json=$is_core_dir/config.json
+
+
+#已经修改的
+is_core_bin=/etc/sing-box/bin/sing-box
+is_core_name=sing-box
+is_core_repo=SagerNet/sing-box
+is_core_dir=/etc/sing-box
+is_conf_dir=/etc/sing-box/conf
+is_sh_bin=/usr/local/bin/sing-box
+is_log_dir=/var/log/sing-box
+is_sh_dir=/etc/sing-box/sh
+is_sh_repo=xiaoutrun-sketch/nova-sbv
+is_config_json=/etc/sing-box/config.json
 is_caddy_bin=/usr/local/bin/caddy
 is_caddy_dir=/etc/caddy
+
+
+
+#尚未修改的
+is_core=sing-box
 is_caddy_repo=caddyserver/caddy
-is_caddyfile=$is_caddy_dir/Caddyfile
-is_caddy_conf=$is_caddy_dir/$author
+is_caddyfile=/etc/caddy/Caddyfile
+is_caddy_conf=/etc/caddy/233boy
 is_systemd=$(type -P systemctl)
 is_openrc=$(type -P rc-service)
 if [[ $is_systemd ]]; then
@@ -102,26 +109,26 @@ is_http_port=80
 is_https_port=443
 
 # core ver
-is_core_ver=$($is_core_bin version | head -n1 | cut -d " " -f3)
+is_core_ver=$(/etc/sing-box/bin/sing-box version | head -n1 | cut -d " " -f3)
 
 # tmp tls key
-is_tls_cer=$is_core_dir/bin/tls.cer
-is_tls_key=$is_core_dir/bin/tls.key
+is_tls_cer=/etc/sing-box/bin/tls.cer
+is_tls_key=/etc/sing-box/bin/tls.key
 [[ ! -f $is_tls_cer || ! -f $is_tls_key ]] && {
     is_tls_tmp=${is_tls_key/key/tmp}
-    $is_core_bin generate tls-keypair tls -m 456 >$is_tls_tmp
+    /etc/sing-box/bin/sing-box generate tls-keypair tls -m 456 >$is_tls_tmp
     awk '/BEGIN PRIVATE KEY/,/END PRIVATE KEY/' $is_tls_tmp >$is_tls_key
     awk '/BEGIN CERTIFICATE/,/END CERTIFICATE/' $is_tls_tmp >$is_tls_cer
     rm $is_tls_tmp
 }
 
-if [[ $(pgrep -f $is_core_bin 2>/dev/null || grep -l "$is_core_bin" /proc/*/cmdline 2>/dev/null) ]]; then
+if [[ $(pgrep -f /etc/sing-box/bin/sing-box 2>/dev/null || grep -l "/etc/sing-box/bin/sing-box" /proc/*/cmdline 2>/dev/null) ]]; then
     is_core_status=$(_green running)
 else
     is_core_status=$(_red_bg stopped)
     is_core_stop=1
 fi
-if [[ -f $is_caddy_bin && -d $is_caddy_dir && $is_caddy_service ]]; then
+if [[ -f /usr/local/bin/caddy && -d /etc/caddy && $is_caddy_service ]]; then
     is_caddy=1
     if [[ $is_systemd ]]; then
         [[ -f /lib/systemd/system/caddy.service && ! $(grep '\-\-adapter caddyfile' /lib/systemd/system/caddy.service) ]] && {
@@ -130,12 +137,12 @@ if [[ -f $is_caddy_bin && -d $is_caddy_dir && $is_caddy_service ]]; then
             systemctl restart caddy &
         }
     fi
-    is_caddy_ver=$($is_caddy_bin version | head -n1 | cut -d " " -f1)
+    is_caddy_ver=$(/usr/local/bin/caddy version | head -n1 | cut -d " " -f1)
     is_tmp_http_port=$(grep -E '^ {2,}http_port|^http_port' $is_caddyfile | grep -E -o [0-9]+)
     is_tmp_https_port=$(grep -E '^ {2,}https_port|^https_port' $is_caddyfile | grep -E -o [0-9]+)
     [[ $is_tmp_http_port ]] && is_http_port=$is_tmp_http_port
     [[ $is_tmp_https_port ]] && is_https_port=$is_tmp_https_port
-    if [[ $(pgrep -f $is_caddy_bin 2>/dev/null || grep -l "$is_caddy_bin" /proc/*/cmdline 2>/dev/null) ]]; then
+    if [[ $(pgrep -f /usr/local/bin/caddy 2>/dev/null || grep -l "/usr/local/bin/caddy" /proc/*/cmdline 2>/dev/null) ]]; then
         is_caddy_status=$(_green running)
     else
         is_caddy_status=$(_red_bg stopped)
