@@ -671,14 +671,10 @@ del() {
                 [[ ! $old_host || $host == $old_host ]] && is_del_host=
                 [[ $old_host && $host != $old_host ]] && is_del_host=$old_host
             fi
-            # 删除 nginx 配置和 SSL 证书
+            # 删除 nginx 配置和 SSL 证书符号链接（保留 Let's Encrypt 原始证书以便复用）
             [[ $is_del_host && -f $is_nginx_conf/$is_del_host.conf ]] && {
                 rm -rf $is_nginx_conf/$is_del_host.conf $is_nginx_conf/$is_del_host.conf.add
                 rm -rf /etc/nginx/ssl/$is_del_host.crt /etc/nginx/ssl/$is_del_host.key
-                # 删除 Let's Encrypt 原始证书
-                [[ -d /etc/letsencrypt/live/$is_del_host ]] && {
-                    certbot delete --cert-name $is_del_host --non-interactive &>/dev/null
-                }
                 [[ ! $is_new_json ]] && manage restart nginx &
             }
         }
