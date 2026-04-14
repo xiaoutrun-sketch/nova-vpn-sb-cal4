@@ -664,14 +664,17 @@ del() {
         [[ ! $is_new_json ]] && manage restart &
         [[ ! $is_no_del_msg ]] && _green "\n已删除: $is_config_file\n"
 
-        [[ $is_nginx ]] && {
+        [[ $is_nginx && $host ]] && {
             is_del_host=$host
-            [[ $is_change ]] && {
-                [[ ! $old_host ]] && return # no host exist or not set new host;
-                is_del_host=$old_host
-            }
-            [[ $is_del_host && $host != $old_host && -f $is_nginx_conf/$is_del_host.conf ]] && {
+            # 如果是更改操作，检查是否需要删除旧域名的配置
+            if [[ $is_change ]]; then
+                [[ ! $old_host || $host == $old_host ]] && is_del_host=
+                [[ $old_host && $host != $old_host ]] && is_del_host=$old_host
+            fi
+            # 删除 nginx 配置和 SSL 证书
+            [[ $is_del_host && -f $is_nginx_conf/$is_del_host.conf ]] && {
                 rm -rf $is_nginx_conf/$is_del_host.conf $is_nginx_conf/$is_del_host.conf.add
+                rm -rf /etc/nginx/ssl/$is_del_host.crt /etc/nginx/ssl/$is_del_host.key
                 [[ ! $is_new_json ]] && manage restart nginx &
             }
         }
