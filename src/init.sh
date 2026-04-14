@@ -95,9 +95,12 @@ is_caddyfile=/etc/caddy/Caddyfile
 
 
 #尚未修改的
-$is_core=sing-box
+is_core=sing-box
 is_caddy_repo=caddyserver/caddy
 is_caddy_conf=/etc/caddy/233boy
+is_caddy_l4_dir=/etc/caddy/l4-routes
+is_caddy_internal_https_port=8443
+is_tls_dir=/etc/sing-box/tls
 is_systemd=$(type -P systemctl)
 is_openrc=$(type -P rc-service)
 if [[ $is_systemd ]]; then

@@ -4,6 +4,7 @@ protocol_list=(
     TUIC
     Trojan
     Hysteria2
+    Naive
     VMess-WS
     VMess-TCP
     VMess-HTTP
@@ -351,9 +352,15 @@ create() {
             # config.json
             create config.json
         fi
-        # caddy auto tls
-        [[ $is_caddy && $host && ! $is_no_auto_tls ]] && {
+        # caddy auto tls (L7 reverse proxy for WS/H2/HTTPUpgrade TLS)
+        [[ $is_caddy && $host && ! $is_no_auto_tls && ! $is_reality && $net != "naive" ]] && {
             create caddy $net
+        }
+        # caddy L4 passthrough for REALITY and naive (sing-box handles TLS)
+        [[ $is_caddy && $host && ($is_reality || $net == "naive") ]] && {
+            load caddy.sh
+            caddy_config l4_add $host $port
+            manage restart caddy &
         }
         # restart core
         manage restart &
@@ -670,11 +677,19 @@ del() {
         [[ $is_caddy ]] && {
             is_del_host=$host
             [[ $is_change ]] && {
-                [[ ! $old_host ]] && return # no host exist or not set new host;
+                [[ ! $old_host ]] && return
                 is_del_host=$old_host
             }
-            [[ $is_del_host && $host != $old_host && -f $is_caddy_conf/$is_del_host.conf ]] && {
-                rm -rf $is_caddy_conf/$is_del_host.conf $is_caddy_conf/$is_del_host.conf.add
+            [[ $is_del_host && $host != $old_host ]] && {
+                if [[ -f $is_caddy_conf/$is_del_host.conf ]]; then
+                    rm -rf $is_caddy_conf/$is_del_host.conf $is_caddy_conf/$is_del_host.conf.add
+                fi
+                if [[ -f $is_caddy_l4_dir/$is_del_host.conf ]]; then
+                    load caddy.sh
+                    caddy_config l4_del $is_del_host
+                    load acme.sh
+                    remove_cert $is_del_host
+                fi
                 [[ ! $is_new_json ]] && manage restart caddy &
             }
         }
@@ -817,6 +832,9 @@ add() {
         trojan)
             is_new_protocol=Trojan
             ;;
+        naive)
+            is_new_protocol=Naive
+            ;;
         socks)
             is_new_protocol=Socks
             ;;
@@ -840,6 +858,13 @@ add() {
         is_use_uuid=$3
         is_use_path=$4
         is_add_opts="[host] [uuid] [/path]"
+        ;;
+    naive)
+        is_use_tls=1
+        is_naive=1
+        is_use_host=$2
+        is_use_pass=$3
+        is_add_opts="[host] [password]"
         ;;
     vmess* | tuic*)
         is_use_port=$2
@@ -1047,6 +1072,12 @@ add() {
         get install-caddy
     fi
 
+    # issue TLS cert for naive (sing-box handles TLS directly with real cert)
+    if [[ $is_naive && $host && ! $is_no_auto_tls && ! $is_gen ]]; then
+        load acme.sh
+        issue_cert $host
+    fi
+
     # create json
     create server $is_new_protocol
 
@@ -1114,7 +1145,7 @@ get() {
             if [[ $is_caddy && $host && -f $is_caddy_conf/$host.conf ]]; then
                 is_tmp_https_port=$(grep -E -o "$host:[1-9][0-9]?+" $is_caddy_conf/$host.conf | sed s/.*://)
             fi
-            if [[ $host && ! -f $is_caddy_conf/$host.conf ]]; then
+            if [[ $host && ! -f $is_caddy_conf/$host.conf && ! -f $is_caddy_l4_dir/$host.conf ]]; then
                 is_no_auto_tls=1
             fi
             [[ $is_tmp_https_port ]] && is_https_port=$is_tmp_https_port
@@ -1157,6 +1188,14 @@ get() {
             is_protocol=$net
             [[ ! $password ]] && password=$uuid
             json_str="users:[{password:\"$password\"}],$is_tls_json"
+            ;;
+        naive*)
+            net=naive
+            is_protocol=naive
+            [[ ! $is_naive_user ]] && is_naive_user=singbox
+            [[ ! $password ]] && password=$uuid
+            is_naive_tls_json="tls:{enabled:true,certificate_path:\"$is_tls_dir/$host/fullchain.pem\",key_path:\"$is_tls_dir/$host/privkey.pem\"}"
+            json_str="users:[{username:\"$is_naive_user\",password:\"$password\"}],$is_naive_tls_json"
             ;;
         shadowsocks*)
             net=ss
@@ -1355,6 +1394,13 @@ info() {
             is_vmess_url=$(jq -c "{v:2,ps:\"233boy-${net}-$is_addr\",add:\"$is_addr\",port:\"$port\",id:\"$uuid\",aid:\"0\",net:\"$net\",type:\"$is_type\"$is_quic_add}" <<<{})
             is_url=vmess://$(echo -n $is_vmess_url | base64 -w 0)
         fi
+        ;;
+    naive)
+        is_color=43
+        is_can_change=(0 2 4)
+        is_info_show=(0 1 2 19 10 8)
+        is_info_str=($is_protocol $is_addr $is_https_port $is_naive_user $password tls)
+        is_url="naive+https://${is_naive_user}:${password}@${host}:${is_https_port}#233boy-naive-${host}"
         ;;
     ss)
         is_can_change=(0 1 4 6)

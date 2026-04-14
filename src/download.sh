@@ -46,13 +46,11 @@ download() {
         chmod +x /usr/local/bin/sing-box ${is_sh_bin/sing-box/sb}
         ;;
     caddy)
-        name="Caddy"
-        tmpfile=$tmpdir/caddy.tar.gz
-        # https://github.com/caddyserver/caddy/releases/download/v2.6.4/caddy_2.6.4_linux_amd64.tar.gz
-        link="https://github.com/${is_caddy_repo}/releases/download/${latest_ver}/caddy_${latest_ver:1}_linux_${is_arch}.tar.gz"
+        name="Caddy (with layer4 plugin)"
+        tmpfile=$tmpdir/caddy
+        link="https://caddyserver.com/api/download?os=linux&arch=${is_arch}&p=github.com/mholt/caddy-l4"
         download_file
-        tar zxf $tmpfile -C $tmpdir
-        cp -f $tmpdir/caddy /usr/local/bin/caddy
+        cp -f $tmpfile /usr/local/bin/caddy
         chmod +x /usr/local/bin/caddy
         ;;
     esac

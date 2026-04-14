@@ -68,7 +68,7 @@ is_log_dir=/var/log/sing-box
 is_sh_bin=/usr/local/bin/sing-box
 is_sh_dir=/etc/sing-box/sh
 is_sh_repo=xiaoutrun-sketch/nova-sbv
-is_pkg="wget tar bash"
+is_pkg="wget tar bash curl"
 # Alpine: gcompat provides glibc compatibility for prebuilt binaries
 [[ $cmd =~ apk ]] && is_pkg="$is_pkg gcompat jq"
 is_config_json=/etc/sing-box/config.json
