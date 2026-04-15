@@ -46,12 +46,7 @@ download() {
         chmod +x /usr/local/bin/sing-box ${is_sh_bin/sing-box/sb}
         ;;
     caddy)
-        name="Caddy (with layer4 plugin)"
-        tmpfile=$tmpdir/caddy
-        link="https://caddyserver.com/api/download?os=linux&arch=${is_arch}&p=github.com/mholt/caddy-l4"
-        download_file
-        cp -f $tmpfile /usr/local/bin/caddy
-        chmod +x /usr/local/bin/caddy
+        download_caddy_l4
         ;;
     esac
     rm -rf $tmpdir
@@ -62,4 +57,69 @@ download_file() {
         rm -rf $tmpdir
         err "\n下载 ${name} 失败.\n"
     fi
+}
+
+caddy_has_l4() {
+    [[ -f $1 && -x $1 ]] && $1 list-modules 2>/dev/null | grep -q "layer4"
+}
+
+download_caddy_l4() {
+    name="Caddy (with layer4 plugin)"
+    tmpfile=$tmpdir/caddy
+
+    _yellow "\n下载 $name ..\n"
+
+    # method 1: Caddy official download API
+    _yellow "尝试方式1: Caddy 官方 API 构建.."
+    _wget -t 2 -q "https://caddyserver.com/api/download?os=linux&arch=${is_arch}&p=github.com/mholt/caddy-l4" -O $tmpfile 2>/dev/null
+    chmod +x $tmpfile 2>/dev/null
+    if caddy_has_l4 $tmpfile; then
+        cp -f $tmpfile /usr/local/bin/caddy
+        _green "Caddy (含 L4 插件) 下载成功.\n"
+        return
+    fi
+
+    # method 2: xcaddy build
+    _yellow "方式1 失败, 尝试方式2: xcaddy 本地构建.."
+    xcaddy_build_caddy_l4
+    if caddy_has_l4 $tmpfile; then
+        cp -f $tmpfile /usr/local/bin/caddy
+        _green "Caddy (含 L4 插件) 构建成功.\n"
+        return
+    fi
+
+    err "无法获取包含 layer4 插件的 Caddy. 请手动构建: https://github.com/mholt/caddy-l4"
+}
+
+xcaddy_build_caddy_l4() {
+    local need_cleanup_go=
+
+    if [[ ! $(type -P go) ]]; then
+        _yellow "安装 Go 编译环境 (临时).."
+        local go_ver=$(_wget -qO- "https://go.dev/VERSION?m=text" | head -1)
+        [[ ! $go_ver ]] && go_ver="go1.22.2"
+        local go_arch=$is_arch
+        _wget -t 3 -q "https://go.dev/dl/${go_ver}.linux-${go_arch}.tar.gz" -O $tmpdir/go.tar.gz
+        [[ $? != 0 ]] && return 1
+        tar -C $tmpdir -xzf $tmpdir/go.tar.gz
+        export PATH=$tmpdir/go/bin:$PATH
+        export GOPATH=$tmpdir/gopath
+        mkdir -p $GOPATH
+        need_cleanup_go=1
+    fi
+
+    if [[ ! $(type -P xcaddy) ]]; then
+        go install github.com/caddyserver/xcaddy/cmd/xcaddy@latest 2>/dev/null
+        export PATH=$(go env GOPATH)/bin:$PATH
+    fi
+
+    if [[ $(type -P xcaddy) ]]; then
+        _yellow "正在使用 xcaddy 构建 Caddy + L4 插件 (可能需要几分钟).."
+        xcaddy build --with github.com/mholt/caddy-l4 --output $tmpfile 2>/dev/null
+    fi
+
+    [[ $need_cleanup_go ]] && {
+        rm -rf $tmpdir/go $tmpdir/gopath $tmpdir/go.tar.gz
+        unset GOPATH
+    }
 }
