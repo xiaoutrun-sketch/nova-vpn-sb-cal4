@@ -42,12 +42,12 @@ pull_cert() {
 
     # 检查证书是否需要续约
     if check_cert_expiry ${cert_file}; then
-        # 调用 API 获取证书（使用根域名请求通配符证书）
-        local response=$(curl -s --max-time 30 "${is_cert_api}?domain=${root_domain}")
+        # 调用 API 获取证书（使用二级域名请求证书）
+        local response=$(curl -s --max-time 30 "${is_cert_api}?domain=${domain}")
 
         # 检查请求是否成功
         if [[ -z "$response" ]]; then
-            send_feishu_alert "【证书续约失败】\n域名: ${root_domain}\n原因: API 请求超时或无响应\n时间: $(date '+%Y-%m-%d %H:%M:%S')"
+            send_feishu_alert "【证书续约失败】\n域名: ${domain}\n原因: API 请求超时或无响应\n时间: $(date '+%Y-%m-%d %H:%M:%S')"
             return 2
         fi
 
@@ -55,7 +55,7 @@ pull_cert() {
         local code=$(echo "$response" | jq -r '.code // .status // "null"')
         if [[ "$code" != "0" && "$code" != "200" && "$code" != "null" ]]; then
             local msg=$(echo "$response" | jq -r '.message // .msg // "未知错误"')
-            send_feishu_alert "【证书续约失败】\n域名: ${root_domain}\n原因: ${msg}\n时间: $(date '+%Y-%m-%d %H:%M:%S')"
+            send_feishu_alert "【证书续约失败】\n域名: ${domain}\n原因: ${msg}\n时间: $(date '+%Y-%m-%d %H:%M:%S')"
             return 2
         fi
 
@@ -65,7 +65,7 @@ pull_cert() {
 
         # 检查证书内容是否有效
         if [[ -z "$cert_content" || "$cert_content" == "null" || -z "$key_content" || "$key_content" == "null" ]]; then
-            send_feishu_alert "【证书续约失败】\n域名: ${root_domain}\n原因: 证书内容为空\n时间: $(date '+%Y-%m-%d %H:%M:%S')"
+            send_feishu_alert "【证书续约失败】\n域名: ${domain}\n原因: 证书内容为空\n时间: $(date '+%Y-%m-%d %H:%M:%S')"
             return 2
         fi
 
