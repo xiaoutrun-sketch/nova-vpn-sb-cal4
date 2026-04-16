@@ -1101,8 +1101,8 @@ add() {
 
     # pull TLS cert for naive (sing-box handles TLS directly with real cert)
     if [[ $is_naive && $host && ! $is_no_auto_tls && ! $is_gen ]]; then
-        load caddy.sh
-        pull_caddy_cert
+        load cert.sh
+        pull_cert
     fi
 
     # check duplicate REALITY servername (REALITY uses is_servername instead of host)
