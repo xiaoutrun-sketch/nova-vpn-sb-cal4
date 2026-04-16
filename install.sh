@@ -452,8 +452,10 @@ main() {
     install_service caddy &>/dev/null
     is_caddy=1
 
-    # init caddy config
-    load init.sh
+    # init caddy config (设置 caddy 需要的变量)
+    is_caddy_conf=/etc/caddy/233boy
+    is_http_port=80
+    is_https_port=443
     load caddy.sh
     caddy_config new
 
