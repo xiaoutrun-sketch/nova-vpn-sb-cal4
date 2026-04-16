@@ -4,10 +4,13 @@
 [[ -f /etc/sing-box/sh/src/cert.sh ]] && source /etc/sing-box/sh/src/cert.sh
 
 caddy_config() {
-    is_caddy_site_file=$is_caddy_conf/${host}.conf
-    is_root_domain=$(get_root_domain ${host})
-    is_custom_cert=/etc/caddy/certs/${is_root_domain}/cert.pem
-    is_custom_key=/etc/caddy/certs/${is_root_domain}/key.pem
+    # 只有在 host 存在时才计算这些变量
+    if [[ $host ]]; then
+        is_caddy_site_file=$is_caddy_conf/${host}.conf
+        is_root_domain=$(get_root_domain ${host})
+        is_custom_cert=/etc/caddy/certs/${is_root_domain}/cert.pem
+        is_custom_key=/etc/caddy/certs/${is_root_domain}/key.pem
+    fi
     case $1 in
     new)
         mkdir -p /etc/caddy /etc/caddy/sites /etc/caddy/certs $is_caddy_conf $is_caddy_conf/layer4
