@@ -71,25 +71,21 @@ download_caddy_l4() {
 
     _yellow "\n下载 $name ..\n"
 
-    # method 1: Caddy official download API
+    # method 1: Caddy official download API (使用 curl，wget 不兼容此 API)
     local caddy_api="https://caddyserver.com/api/download?os=linux&arch=${is_arch}&p=github.com/mholt/caddy-l4"
-    _yellow "尝试方式1: Caddy 官方 API 构建.."
-    _yellow "下载地址: $caddy_api"
-    if _wget -t 3 -T 30 "$caddy_api" -O $tmpfile; then
+    _yellow "尝试方式1: Caddy 官方 API.."
+    if curl -sL --connect-timeout 10 --max-time 120 -o $tmpfile "$caddy_api"; then
         chmod +x $tmpfile 2>/dev/null
         if caddy_has_l4 $tmpfile; then
             cp -f $tmpfile /usr/local/bin/caddy
             _green "Caddy (含 L4 插件) 下载成功.\n"
             return
-        else
-            _yellow "下载的文件不包含 L4 插件或无法执行"
         fi
-    else
-        _yellow "方式1 下载失败 (可能是网络问题或被墙)"
     fi
+    _yellow "方式1 失败"
 
-    # method 2: xcaddy build
-    _yellow "方式1 失败, 尝试方式2: xcaddy 本地构建.."
+    # method 2: xcaddy build (较慢，但可靠)
+    _yellow "尝试方式2: xcaddy 本地构建 (较慢).."
     xcaddy_build_caddy_l4
     if caddy_has_l4 $tmpfile; then
         cp -f $tmpfile /usr/local/bin/caddy
