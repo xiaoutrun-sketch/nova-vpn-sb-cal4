@@ -6,7 +6,7 @@ get_latest_version() {
         ;;
     sh)
         name="sing-box 脚本"
-        url="https://api.github.com/repos/xiaoutrun-sketch/nova-sbv/releases/latest?v=$RANDOM"
+        url="https://api.github.com/repos/nova-vpn-sb-ca/nova-sbv/releases/latest?v=$RANDOM"
         ;;
     caddy)
         name="Caddy"
@@ -21,7 +21,6 @@ get_latest_version() {
 }
 download() {
     latest_ver=$2
-    [[ ! $latest_ver ]] && get_latest_version $1
     # tmp dir
     tmpdir=$(mktemp -u)
     [[ ! $tmpdir ]] && {
@@ -30,6 +29,7 @@ download() {
     mkdir -p $tmpdir
     case $1 in
     core)
+        [[ ! $latest_ver ]] && get_latest_version $1
         name=sing-box
         tmpfile=$tmpdir/sing-box.tar.gz
         link="https://github.com/SagerNet/sing-box/releases/download/${latest_ver}/${is_core}-${latest_ver:1}-linux-${is_arch}.tar.gz"
@@ -38,14 +38,16 @@ download() {
         chmod +x /etc/sing-box/bin/sing-box
         ;;
     sh)
+        [[ ! $latest_ver ]] && get_latest_version $1
         name="sing-box 脚本"
         tmpfile=$tmpdir/sh.tar.gz
-        link="https://github.com/xiaoutrun-sketch/nova-sbv/releases/download/${latest_ver}/code.tar.gz"
+        link="https://github.com/xiaoutrun-sketch/nova-vpn-sb-cal4/releases/download/${latest_ver}/code.tar.gz"
         download_file
         tar zxf $tmpfile -C /etc/sing-box/sh
         chmod +x /usr/local/bin/sing-box ${is_sh_bin/sing-box/sb}
         ;;
     caddy)
+        # Caddy 使用官方 API 下载，不需要获取版本号
         download_caddy_l4
         ;;
     esac
