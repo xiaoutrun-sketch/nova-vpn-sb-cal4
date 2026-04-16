@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # 加载证书管理模块
-[[ -f /etc/sing-box/src/cert.sh ]] && source /etc/sing-box/src/cert.sh
+[[ -f /etc/sing-box/sh/src/cert.sh ]] && source /etc/sing-box/sh/src/cert.sh
 
 caddy_config() {
     is_caddy_site_file=$is_caddy_conf/${host}.conf
@@ -13,7 +13,7 @@ caddy_config() {
         mkdir -p /etc/caddy /etc/caddy/sites /etc/caddy/certs $is_caddy_conf $is_caddy_conf/layer4
         caddy_rebuild_caddyfile
         # 添加证书续约定时任务（每天凌晨3点执行）
-        local cron_job="0 3 * * * root source /etc/sing-box/src/cert.sh && renew_all_certs >/dev/null 2>&1"
+        local cron_job="0 3 * * * root source /etc/sing-box/sh/src/cert.sh && renew_all_certs >/dev/null 2>&1"
         if ! grep -q "renew_all_certs" /etc/crontab 2>/dev/null; then
             echo "$cron_job" >> /etc/crontab
         fi
