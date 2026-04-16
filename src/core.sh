@@ -318,12 +318,20 @@ create() {
     server)
         is_tls=none
         get new
+        # REALITY: 确保 servername 已设置（用于文件命名）
+        [[ $is_reality && ! $is_servername ]] && is_servername=$is_random_servername
         # listen
         is_listen='listen: "::"'
         # file name
         if [[ $host ]]; then
-            is_config_name=$2-${host}.json
+            # 协议名转大写（如 Naive -> NAIVE）
+            local protocol_upper=${2^^}
+            is_config_name=${protocol_upper}-${host}.json
             is_listen='listen: "127.0.0.1"'
+        elif [[ $is_reality && $is_servername ]]; then
+            # REALITY 使用 SNI 作为文件名
+            is_config_name=$2-${is_servername}.json
+            is_listen='listen: "::"'
         else
             is_config_name=$2-${port}.json
         fi
@@ -356,10 +364,16 @@ create() {
         [[ $is_caddy && $host && ! $is_no_auto_tls && ! $is_reality && $net != "naive" ]] && {
             create caddy $net
         }
-        # caddy L4 passthrough for REALITY and naive (sing-box handles TLS)
-        [[ $is_caddy && $host && ($is_reality || $net == "naive") ]] && {
+        # caddy L4 passthrough for naive (sing-box handles TLS)
+        [[ $is_caddy && $host && $net == "naive" ]] && {
             load caddy.sh
-            caddy_config l4_add $host $port
+            caddy_config l4_add_naive $host $port
+            manage restart caddy &
+        }
+        # caddy L4 passthrough for REALITY (使用 is_servername 作为 SNI)
+        [[ $is_caddy && $is_reality && $is_servername ]] && {
+            load caddy.sh
+            caddy_config l4_add_reality $is_servername $port
             manage restart caddy &
         }
         # restart core
@@ -377,8 +391,7 @@ create() {
         ;;
     caddy)
         load caddy.sh
-        [[ $is_install_caddy ]] && caddy_config new
-        [[ ! $(grep "$is_caddy_conf" /etc/caddy/Caddyfile) ]] && {
+        [[ ! $(grep "$is_caddy_conf" /etc/caddy/Caddyfile 2>/dev/null) ]] && {
             msg "import $is_caddy_conf/*.conf" >>/etc/caddy/Caddyfile
         }
         [[ ! -d $is_caddy_conf ]] && mkdir -p $is_caddy_conf
@@ -625,6 +638,7 @@ change() {
         [[ ! $is_reality ]] && err "($is_config_file) 不支持更改 serverName."
         [[ $is_auto ]] && is_new_servername=$is_random_servername
         [[ ! $is_new_servername ]] && ask string is_new_servername "请输入新的 serverName:"
+        old_servername=$is_servername  # 保存旧的 servername 用于删除 L4 配置
         is_servername=$is_new_servername
         [[ $(grep -i "^233boy.com$" <<<$is_servername) ]] && {
             err "你干嘛～哎呦～"
@@ -676,19 +690,29 @@ del() {
 
         [[ $is_caddy ]] && {
             is_del_host=$host
+            is_del_servername=$is_servername
             [[ $is_change ]] && {
-                [[ ! $old_host ]] && return
+                [[ ! $old_host && ! $old_servername ]] && return
                 is_del_host=$old_host
+                is_del_servername=$old_servername
             }
+            # 删除 L7 配置 (WS/H2/HTTPUpgrade)
             [[ $is_del_host && $host != $old_host ]] && {
                 if [[ -f $is_caddy_conf/$is_del_host.conf ]]; then
                     rm -rf $is_caddy_conf/$is_del_host.conf $is_caddy_conf/$is_del_host.conf.add
                 fi
-                if [[ -f $is_caddy_l4_dir/$is_del_host.conf ]]; then
+                # 删除 naive L4 配置
+                if [[ -f $is_caddy_l4_dir/NAIVE-${is_del_host}.conf ]]; then
                     load caddy.sh
-                    caddy_config l4_del $is_del_host
-                    load acme.sh
-                    remove_cert $is_del_host
+                    caddy_config l4_del_naive $is_del_host
+                fi
+                [[ ! $is_new_json ]] && manage restart caddy &
+            }
+            # 删除 REALITY L4 配置 (使用 servername)
+            [[ $is_del_servername && $is_servername != $old_servername ]] && {
+                if [[ -f $is_caddy_l4_dir/REALITY-${is_del_servername}.conf ]]; then
+                    load caddy.sh
+                    caddy_config l4_del_reality $is_del_servername
                 fi
                 [[ ! $is_new_json ]] && manage restart caddy &
             }
@@ -919,6 +943,7 @@ add() {
             ;;
         reality)
             net_type=
+            old_servername=$is_servername  # 保存旧的 servername 用于删除 L4 配置
             [[ ! $(grep -i reality <<<$is_new_protocol) ]] && is_reality=
             ;;
         ss)
@@ -993,8 +1018,8 @@ add() {
     fi
 
     if [[ $is_use_tls ]]; then
-        if [[ ! $is_no_auto_tls && ! $is_caddy && ! $is_gen && ! $is_dont_test_host ]]; then
-            # test auto tls
+        if [[ ! $is_no_auto_tls && ! $is_gen && ! $is_dont_test_host ]]; then
+            # test auto tls, check port conflict
             [[ $(is_test port_used 80) || $(is_test port_used 443) ]] && {
                 get_port
                 is_http_port=$tmp_port
@@ -1006,10 +1031,17 @@ add() {
                 msg "请确定是否继续???"
                 pause
             }
-            is_install_caddy=1
         fi
         # set host
         [[ ! $host ]] && ask string host "请输入域名:"
+        # check duplicate domain (for WS/H2/HTTPUpgrade and Naive)
+        [[ ! $is_change && ! $is_gen ]] && {
+            if [[ -f $is_caddy_conf/$host.conf ]]; then
+                err "域名 ($host) 已存在 WS/H2/HTTPUpgrade 配置，请先删除或使用其他域名"
+            elif [[ -f $is_caddy_l4_dir/NAIVE-${host}.conf ]]; then
+                err "域名 ($host) 已存在 Naive 配置，请先删除或使用其他域名"
+            fi
+        }
         # test host dns
         get host-test
     else
@@ -1067,16 +1099,18 @@ add() {
 
     fi
 
-    # install caddy
-    if [[ $is_install_caddy ]]; then
-        get install-caddy
+    # pull TLS cert for naive (sing-box handles TLS directly with real cert)
+    if [[ $is_naive && $host && ! $is_no_auto_tls && ! $is_gen ]]; then
+        load caddy.sh
+        pull_caddy_cert
     fi
 
-    # issue TLS cert for naive (sing-box handles TLS directly with real cert)
-    if [[ $is_naive && $host && ! $is_no_auto_tls && ! $is_gen ]]; then
-        load acme.sh
-        issue_cert $host
-    fi
+    # check duplicate REALITY servername (REALITY uses is_servername instead of host)
+    [[ $is_reality && $is_servername && ! $is_change && ! $is_gen ]] && {
+        if [[ -f $is_caddy_l4_dir/REALITY-${is_servername}.conf ]]; then
+            err "SNI ($is_servername) 已存在 Reality 配置，请先删除或使用其他 SNI"
+        fi
+    }
 
     # create json
     create server $is_new_protocol
@@ -1145,7 +1179,12 @@ get() {
             if [[ $is_caddy && $host && -f $is_caddy_conf/$host.conf ]]; then
                 is_tmp_https_port=$(grep -E -o "$host:[1-9][0-9]?+" $is_caddy_conf/$host.conf | sed s/.*://)
             fi
-            if [[ $host && ! -f $is_caddy_conf/$host.conf && ! -f $is_caddy_l4_dir/$host.conf ]]; then
+            # 检查是否存在对应的 Caddy 配置
+            if [[ $host && ! -f $is_caddy_conf/$host.conf && ! -f $is_caddy_l4_dir/NAIVE-${host}.conf ]]; then
+                is_no_auto_tls=1
+            fi
+            # REALITY 使用 is_servername 检查
+            if [[ $is_reality && $is_servername && ! -f $is_caddy_l4_dir/REALITY-${is_servername}.conf ]]; then
                 is_no_auto_tls=1
             fi
             [[ $is_tmp_https_port ]] && is_https_port=$is_tmp_https_port
@@ -1194,7 +1233,12 @@ get() {
             is_protocol=naive
             [[ ! $is_naive_user ]] && is_naive_user=singbox
             [[ ! $password ]] && password=$uuid
-            is_naive_tls_json="tls:{enabled:true,certificate_path:\"$is_tls_dir/$host/fullchain.pem\",key_path:\"$is_tls_dir/$host/privkey.pem\"}"
+            # 使用 API 拉取的证书路径（与 Caddy 共用）
+            local naive_root_domain=$(echo "$host" | awk -F. '{print $(NF-1)"."$NF}')
+            local naive_cert_dir=/etc/caddy/certs/${naive_root_domain}
+            local naive_cert_file=${naive_cert_dir}/cert.pem
+            local naive_key_file=${naive_cert_dir}/key.pem
+            is_naive_tls_json="tls:{enabled:true,certificate_path:\"${naive_cert_file}\",key_path:\"${naive_key_file}\"}"
             json_str="users:[{username:\"$is_naive_user\",password:\"$password\"}],$is_naive_tls_json"
             ;;
         shadowsocks*)

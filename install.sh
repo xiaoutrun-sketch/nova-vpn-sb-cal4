@@ -220,10 +220,10 @@ check_status() {
             msg err "下载 ${is_core_name} 失败"
             is_fail=1
         }
-        [[ ! -f $is_sh_ok ]] && {
-            msg err "下载 ${is_core_name} 脚本失败"
-            is_fail=1
-        }
+        # [[ ! -f $is_sh_ok ]] && {
+        #     msg err "下载 ${is_core_name} 脚本失败"
+        #     is_fail=1
+        # }
         [[ ! -f $is_jq_ok ]] && {
             msg err "下载 jq 失败"
             is_fail=1
@@ -232,7 +232,7 @@ check_status() {
         [[ ! $is_fail ]] && {
             is_wget=1
             [[ ! $is_core_file ]] && download core &
-            [[ ! $local_install ]] && download sh &
+            # [[ ! $local_install ]] && download sh &
             [[ $jq_not_found ]] && download jq &
             get_ip
             wait
@@ -367,7 +367,7 @@ main() {
     # if wget installed. download core, sh, jq, get ip
     [[ $is_wget ]] && {
         [[ ! $is_core_file ]] && download core &
-        [[ ! $local_install ]] && download sh &
+        # [[ ! $local_install ]] && download sh &
         [[ $jq_not_found ]] && download jq &
         get_ip
     }
@@ -445,9 +445,17 @@ main() {
     # create condf dir
     mkdir -p /etc/sing-box/conf
 
-    load core.sh
-    # create a reality config
-    add reality
+    # install caddy
+    msg ok "安装 Caddy..."
+    load download.sh
+    download caddy
+    install_service caddy &>/dev/null
+    is_caddy=1
+
+    # init caddy config
+    load caddy.sh
+    caddy_config new
+
     # wait for background tasks (e.g., OpenRC service start)
     wait
     # remove tmp dir and exit.
