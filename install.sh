@@ -442,8 +442,31 @@ main() {
     is_new_install=1
     install_service $is_core &>/dev/null
 
-    # create condf dir
+    # create conf dir
     mkdir -p /etc/sing-box/conf
+
+    # create default config.json
+    cat > /etc/sing-box/config.json << 'EOF'
+{
+  "log": {
+    "output": "/var/log/sing-box/access.log",
+    "level": "info",
+    "timestamp": true
+  },
+  "dns": {},
+  "ntp": {
+    "enabled": true,
+    "server": "time.apple.com"
+  },
+  "outbounds": [
+    {
+      "tag": "direct",
+      "type": "direct"
+    }
+  ]
+}
+EOF
+    mkdir -p /var/log/sing-box
 
     # install caddy
     msg ok "安装 Caddy..."
