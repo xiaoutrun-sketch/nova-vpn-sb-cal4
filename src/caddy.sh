@@ -102,6 +102,11 @@ caddy_rebuild_caddyfile() {
     }
 }
 
+# 默认站点（确保 Caddy 监听端口）
+:$is_http_port, :$is_https_port {
+    respond "OK" 200
+}
+
 import $is_caddy_conf/*.conf
 import /etc/caddy/sites/*.conf
 EOF
