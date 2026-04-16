@@ -174,7 +174,7 @@ download() {
         is_ok=$is_core_ok
         ;;
     sh)
-        link=https://github.com/xiaoutrun-sketch/nova-sbv/releases/latest/download/code.tar.gz
+        link=https://github.com/xiaoutrun-sketch/nova-vpn-sb-cal4/releases/latest/download/code.tar.gz
         name="sing-box 脚本"
         tmpfile=$tmpsh
         is_ok=$is_sh_ok
