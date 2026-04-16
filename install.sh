@@ -453,6 +453,7 @@ main() {
     is_caddy=1
 
     # init caddy config
+    load init.sh
     load caddy.sh
     caddy_config new
 
