@@ -72,7 +72,7 @@ download_caddy_l4() {
     _yellow "\n下载 $name ..\n"
 
     # method 1: Caddy official download API (使用 curl，wget 不兼容此 API)
-    local caddy_api="https://caddyserver.com/api/download?os=linux&arch=${is_arch}&p=github.com/mholt/caddy-l4"
+    local caddy_api="https://caddyserver.com/api/download?os=linux&arch=${is_arch}&p=github.com/mholt/caddy-l4&p=github.com/caddyserver/forwardproxy"
     _yellow "尝试方式1: Caddy 官方 API.."
     if curl -sL --connect-timeout 10 --max-time 120 -o $tmpfile "$caddy_api"; then
         chmod +x $tmpfile 2>/dev/null

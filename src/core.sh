@@ -884,7 +884,7 @@ add() {
         is_add_opts="[host] [uuid] [/path]"
         ;;
     naive)
-        is_use_tls=1
+        is_use_tls=0
         is_naive=1
         is_use_host=$2
         is_use_pass=$3
@@ -1586,7 +1586,7 @@ update() {
         is_update_name=sh
         is_show_name="sing-box 脚本"
         is_run_ver=$is_sh_ver
-        is_update_repo=xiaoutrun-sketch/nova-sbv
+        is_update_repo=xiaoutrun-sketch/nova-vpn-sb-cal4
         ;;
     3 | caddy)
         [[ ! $is_caddy ]] && err "不支持更新 Caddy."
