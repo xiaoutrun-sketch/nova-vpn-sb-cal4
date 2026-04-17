@@ -6,7 +6,7 @@ get_latest_version() {
         ;;
     sh)
         name="sing-box 脚本"
-        url="https://api.github.com/repos/nova-vpn-sb-ca/nova-sbv/releases/latest?v=$RANDOM"
+        url="https://api.github.com/repos/xiaoutrun-sketch/nova-vpn-sb-cal4/releases/latest?v=$RANDOM"
         ;;
     caddy)
         name="Caddy"
